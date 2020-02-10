@@ -1,0 +1,78 @@
+<h4>認識テスト</h4>
+<noscript><p class="warning-message"><a href="/web-app/support/javascript/">JavaScriptを有効にする</a>と、サンプルを実行できます。</p></noscript>
+    <form>
+        <input type="submit" value="開始" /><span>&nbsp;</span>
+        <p style="border: 1px solid; white-space: pre-wrap; max-height: 10em; overflow: auto"></p>
+    </form>
+
+<script type="text/javascript">
+( function()
+{
+    var form = document.forms[ document.forms.length - 1 ];
+    var button = form.getElementsByTagName( 'input' )[ 0 ];
+    var progress = form.getElementsByTagName( 'p' )[ 0 ];
+
+    window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if( ! window.SpeechRecognition )
+    {
+        button.disabled = true;
+
+        var message = document.createElement( 'div' );
+        message.className = 'warning-message';
+        message.appendChild( document.createTextNode( 'お使いのブラウザでは、Web Speech APIはサポートされていません。' ) );
+        form.parentNode.insertBefore( message, form );
+    }
+    else
+    {
+        var recognition = new window.SpeechRecognition();
+        recognition.lang = 'ja-JP';
+        recognition.onerror = function( event )
+        {
+            if( event.error != 'aborted' ) window.alert( 'ERROR:' + event.error );
+        }
+
+        recognition.onspeechend = function( event )
+        {
+            button.nextSibling.firstChild.data = event.type;
+            if( event.type.indexOf( 'end' ) != -1 )
+            {
+                button.value = '開始';
+                button.nextSibling.className = '';
+            }
+        }
+        recognition.onnomatch = recognition.onresult = function( event )
+        {
+            if( 0 < event.results.length )
+            {
+                var alternative = String(event.results[ 0 ][ 0 ].transcript);
+                // ここから
+                alternative = alternative.replace('の', '-');         // の→'-'
+                alternative = alternative.replace(/[^\x01-\x7E]/g,'') // 全角文字の除去
+                alternative = alternative.replace(/ /g, '');          // 空白除去
+                // ここまで
+                progress.insertBefore( document.createTextNode( alternative + '\n' ), progress.firstChild );
+            }
+        }
+
+        form.onsubmit = function()
+        {
+            if( button.value == '停止' )
+            {
+                button.value = '開始';
+                recognition.abort();
+            }
+            else
+            {
+                button.value = '停止';
+                button.nextSibling.className = 'loading';
+
+                while( progress.firstChild ) progress.removeChild( progress.firstChild );
+
+                recognition.interimResults = true;
+                recognition.start();
+            }
+            return false;
+        }
+    }
+} )();
+</script>
